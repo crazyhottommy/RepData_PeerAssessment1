@@ -19,8 +19,13 @@ library(dplyr)
 library(ggplot2)
 dat<- tbl_df(dat)
 steps_per_day<- dat %>% group_by(date) %>% summarise(steps_each_day=sum(steps, na.rm=T))
+# make a histogram
 ggplot(steps_per_day) + geom_histogram(aes(x=steps_each_day), color="white")
+```
 
+Calculate and report the mean and median of the total number of steps taken per day
+
+```{r}
 dat %>% group_by(date) %>% summarise(mean_steps=mean(steps, na.rm=T), 
                                      median_steps=median(steps, na.rm=T)) %>% print(n=61)
 ```
@@ -31,7 +36,9 @@ dat %>% group_by(date) %>% summarise(mean_steps=mean(steps, na.rm=T),
 interval_mean_steps<- dat %>% group_by(interval) %>% summarise(mean_steps_per_interval=mean(steps, na.rm=T))
 ggplot(interval_mean_steps) + geom_line(aes(x=interval, y=mean_steps_per_interval))
 ```
+
 Which 5-minute interval, on average across all the days in the dataset, contains the maximum  number of steps?
+
 ```{r}
 interval_mean_steps %>% arrange(desc(mean_steps_per_interval)) %>% head(n=1)
 ```
@@ -80,12 +87,16 @@ calculate the average steps every 5 min interval for weekdays and weekends
 weekday_weekend_mean_steps<- dat_weekday_weekend %>% group_by(weekday_or_weekend, interval) %>%
         summarise(mean_steps=mean(steps))
 ```
+
 plot a line graph for the mean steps of weekdays and weekends respectively.
+
 ```{r}
 ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps,
                                                    colour=weekday_or_weekend))
 ```
+
 or to make two plots in two panels
+
 ```{r}
 ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps)) +
         facet_grid(weekday_or_weekend ~ .)
@@ -97,4 +108,5 @@ ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps)) +
 ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps)) +
         facet_wrap(~weekday_or_weekend, ncol=1)
 ```
-it looks like this person took more steps over the weekends on average.
+
+### it looks like this person took more steps over the weekends on average.
