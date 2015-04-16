@@ -7,19 +7,94 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+setwd("/Users/Tammy/online_courses/data_science/RepData_PeerAssessment1")
+dat<- read.csv(unz("activity.zip","activity.csv"))
+dat$date<- as.Date(dat$date)
+```
 
 ## What is mean total number of steps taken per day?
+```{r}
+library(dplyr)
+library(ggplot2)
+dat<- tbl_df(dat)
+steps_per_day<- dat %>% group_by(date) %>% summarise(steps_each_day=sum(steps, na.rm=T))
+ggplot(steps_per_day) + geom_histogram(aes(x=steps_each_day), color="white")
 
+dat %>% group_by(date) %>% summarise(mean_steps=mean(steps, na.rm=T), 
+                                     median_steps=median(steps, na.rm=T)) %>% print(n=61)
+```
 
 
 ## What is the average daily activity pattern?
-
-
-
+```{r}
+interval_mean_steps<- dat %>% group_by(interval) %>% summarise(mean_steps_per_interval=mean(steps, na.rm=T))
+ggplot(interval_mean_steps) + geom_line(aes(x=interval, y=mean_steps_per_interval))
+```
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum  number of steps?
+```{r}
+interval_mean_steps %>% arrange(desc(mean_steps_per_interval)) %>% head(n=1)
+```
 ## Imputing missing values
+How many NAs in the orignal dataset?(how many rows contain NAs?)
+```{r}
+table(complete.cases(dat))
+```
+There are total 2304 rows containing NAs.
 
+use the mean of that 5 min interval of all days to impute the missing NAs
+```{r}
+dat_no_NA<- dat
+for (i in which(is.na(dat$steps))){
+        idx<- interval_mean_steps$interval == as.numeric(dat[i,3])
+        imputing_value<- as.numeric(interval_mean_steps[idx,2])
+        dat_no_NA[i,1]<- imputing_value
+}
 
+```
+histogram of total number of steps taken each day
+```{r}
+steps_per_day_no_NA<- dat_no_NA %>% group_by(date) %>% 
+        summarise(steps_each_day=sum(steps, na.rm=T))
+ggplot(steps_per_day_no_NA) + geom_histogram(aes(x=steps_each_day), color="white")
+```
+
+After imputing missing values, in some of the days, the mean steps are very close to the median 
+steps
+```{r}
+dat_no_NA %>% group_by(date) %>% summarise(mean_steps=mean(steps, na.rm=T), 
+                                     median_steps=median(steps, na.rm=T)) %>% print(n=61)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+add a column containing whether it is a weekday or weekend
+```{r}
+dat_weekday_weekend<- dat_no_NA %>% 
+        mutate(weekday_or_weekend= ifelse(weekdays(date)=="Saturday" | 
+                                                        weekdays(date) == "Sunday",
+                                               "weekend", "weekday"))
+dat_weekday_weekend$weekday_or_weekend<- as.factor(dat_weekday_weekend$weekday_or_weekend)
+```
+calculate the average steps every 5 min interval for weekdays and weekends
+```{r}
+weekday_weekend_mean_steps<- dat_weekday_weekend %>% group_by(weekday_or_weekend, interval) %>%
+        summarise(mean_steps=mean(steps))
+```
+plot a line graph for the mean steps of weekdays and weekends respectively.
+```{r}
+ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps,
+                                                   colour=weekday_or_weekend))
+```
+or to make two plots in two panels
+```{r}
+ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps)) +
+        facet_grid(weekday_or_weekend ~ .)
+```
+
+### use facet_wrap rather than use facet_grid
+
+```{r}
+ggplot(weekday_weekend_mean_steps) + geom_line(aes(x=interval, y=mean_steps)) +
+        facet_wrap(~weekday_or_weekend, ncol=1)
+```
+it looks like this person took more steps over the weekends on average.
